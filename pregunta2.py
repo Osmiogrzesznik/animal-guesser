@@ -1,176 +1,185 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+import gettext
 import json
 import random
 from adivinaconf import *
+en = gettext.translation('guesser', localedir='locale', languages=['en'])
+en.install()
 
 class SetEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, set):
             return list(obj)
         return json.JSONEncoder.default(self, obj)
- 
 
-
-def trad_sino(s):
-    if len(s)==0:
-        return None
-    while s.lower() not in ACEPTABLE_SINO:
-        s = raw_input('> ')
-    if s in POS_SI:
-        return SI
-    if s in POS_NO:
-        return NO
-
-def si_es_no(s):
-    if s ==SI:
-        return NO
-    return SI
-
-def aprender(cosa):
-    for preg,resp in respuestas_actual.iteritems():
-            db[preg][resp]=set(db[preg][resp])
-            db[preg][resp].add(cosa)
-def obt_resp(preg):
-    n = 0
-    for resp in respuestas:
-        if resp in db[preg][SI]:
-        # if resp in db[preg][SI] or resp in db[preg][NO]:
-            n+=1
-    return n
-def masgrande(st):
-   t = zip([len(db[x][SI])+len(db[x][NO]) for x in st],[x for x in st])
-   print t
-   return max(t)[1]
-
-def masgrande2(st):
-    t = zip([obt_resp(x)for x in st],[x for x in st])
-    return max(t)[1]    
-def loaddb():
-    fh = open('database_{}.json'.format(COSA),'r')
-    rs = fh.read()
-    db = json.loads(str(rs))
-    return db
-
-def savedb():
-    global db
-    fw = open('database_{}.json'.format(COSA),'w')
-    fw.write(json.dumps(db,indent=0,cls=SetEncoder))
-    fw.close()    
-
-def generarsets():
-    preguntas = set(db.iterkeys())
-    respuestas = set()
-    for resp in db.values():
-        for t in resp.values():
-            for cosa in t:
-                respuestas.add(cosa)
-    puntos = dict()
-    for r in respuestas:
-        puntos[r]=1
-
-    return preguntas,respuestas,puntos
-def maxpuntos():
-    if len(puntos)<1: return (0,0)
-    return max(zip(puntos.values(),puntos.keys()))
-
-def main():
-    print 'Vamos a jugar un juego, piensa en un {}, cuando quieras, aprieta enter.\n Cuando no sepa la respuesta, presione enter para saltar la pregunta'.format(COSA)
-    raw_input('')
-    global db
-    global respuestas_actual
-    global respuestas
-    global puntos
-
-    win = False
-    db = loaddb()
-    preguntas,respuestas,puntos = generarsets()
-    respuestas_actual = dict()
-    intentos = MAXINTENTOS
-
-    while True:
-        #Mientras queden respuestas y preguntas, y si estamos jugando con puntos, no haya un animal
-        #que supere el puntaje máximo, hace una pregunta según su criterio (RANDOM, NUEVA_AI o tradicional)
-        while len(respuestas)>0 and len(preguntas)>0 and (not PUNTOS or maxpuntos()[0]<PUNTAJEMAX):
-            if RANDOM:
-                p_actual = random.choice(list(preguntas))
-            elif NUEVA_AI:
-                p_actual = masgrande2(preguntas)
-            else:
-                p_actual = masgrande(preguntas)
-            preguntas.remove(p_actual)
-            print '¿Tu {} {}? (s/n)  '.format(COSA,p_actual),
-            ra=trad_sino(raw_input(''))
-            if ra is None:
-                continue
-            respuestas_actual[p_actual]=ra
-            for e in respuestas.copy():     
-                # Elimina el animal de los posibles si la respuesta no es la correcta, Y si está
-                # activado el modo rápido Ó si sabe que la respuesta es la contraria
-                if e not in db[p_actual][ra] and (RAPIDO or e in db[p_actual][si_es_no(ra)]):
-                    respuestas.remove(e)
-                    puntos.pop(e,None)
-                elif e in db[p_actual][ra]:
-                    puntos[e] = puntos.get(e,0) + 1
-              
-        #Si quedan respuestas posibles, y algún animal tiene 1 punto menos que el puntaje máximo, intenta achuntarle
-        while (len(respuestas)>0 and (not PUNTOS or maxpuntos()[0] == PUNTAJEMAX)) or len(respuestas) in [1,2]:
-            if PUNTOS:
-                actual = maxpuntos()[1]
-            else:
-                actual= random.choice(list(respuestas))
-            print '¿Tu {} es {}? (s/n) '.format(COSA,actual),
-            ra= trad_sino(raw_input(''))
-            if ra == SI:
-                print 'Gané, jejeje'
-                aprender(actual)
-                win = True
-                break
-            if ra == NO:
-                print 'No puede ser, nooooo!'
-                intentos -=1
-                puntos.pop(actual,None)
-                if actual in respuestas: respuestas.remove(actual)
-
-        if win: break
-    
-        #Si quedan respuestas, volver a intentar ()
-        if intentos >0 and len(respuestas)>0 and len(preguntas)>0: continue
+class GuessGame():
+    def __init__(self):
+        self.win = False
+        self.db = self.loaddb()
+        self.questions,self.answers,self.points = self.generate_sets()
+        self.current_answers = dict() #Dictionary that holds question:answer value pairs for current THING
+        self.tries = MAXTRIES      
         
-        #Si se acaban las respuestas, pregunta por nuevos animal y pregunta, y graba la información en la DB.
-        else: 
-            print 'Me rindo.¿Qué {} era?: '.format(COSA)
-            nueva_cosa = raw_input(u'').lower()
-            print "\nPerfecto.\nPodrías formular una pregunta de tipo 'sí o no' para diferenciar tu {}? (la respuesta debe ser sí)".format(COSA)
-            print "Completa la siguiente oración: '¿Tu {} ...... ?'".format(COSA)
-            while True:
-                print "¿Tu {}...".format(COSA),
-                pregunta_nueva = raw_input(u'').lower()
-                if pregunta_nueva in preguntas or pregunta_nueva in respuestas_actual:
-                    print 'Esa pregunta ya me la sé, intenta con otra.'
-                    respuestas_actual[pregunta_nueva]=SI
-                    continue
-                elif len(pregunta_nueva)<1:
-                    break
-                respuestas_actual[pregunta_nueva]=SI
-                db[pregunta_nueva]=dict()
-                db[pregunta_nueva][SI] = set()
-                db[pregunta_nueva][NO] = set()
-                break
-            aprender(nueva_cosa)
-            print 'Querrías jugar de nuevo?   ',
-            ra = trad_sino(raw_input(''))
-            if ra == SI:
-                savedb()
-                preguntas,respuestas,puntos = generarsets()
-                respuestas_actual = dict()
-                intentos = MAXINTENTOS
-                continue
-            if ra == NO or ra is None:
-                savedb()
-                break
-    
-    
+        
+    def ask(self):
+        #translate an input to a standard YES or NO answer.
+        s = input('')
+        if len(s)==0:
+            return None
+        while s.lower() not in ACCEPTABLE_YESNO:
+            s = input('> ')
+        if s in POS_YES:
+            return YES
+        if s in POS_NO:
+            return NO
 
+    def yes_to_no(self,s):
+        if s ==YES:
+            return NO
+        return YES
+
+    def learn_new(self,thing):
+        for quest,answ in self.current_answers.items():
+                self.db[quest][answ]=set(self.db[quest][answ])
+                self.db[quest][answ].add(thing)
+
+    def largest(self,st):
+        #find questions with more "answers" on database, given a set of possible questions
+        t = list(zip([len(self.db[x][YES])+len(self.db[x][NO]) for x in st],[x for x in st]))
+        return max(t)[1]
+
+    def largest2(self,st):
+        #find the question with more "YES answers" on current remaining answers set
+        t = list(zip([self.get_answer_n(x)for x in st],[x for x in st]))
+        return max(t)[1]
+
+    def get_answer_n(self,quest):
+        #given a question, returns the number of remaining possible answers that have a positive (YES) answer
+        n = 0
+        for answ in self.answers:
+            if answ in self.db[quest][YES]:
+                n+=1
+        return n   
+
+    def loaddb(self):
+        fh = open('database_{}.json'.format(THING),'r')
+        rs = fh.read()
+        db = json.loads(str(rs))
+        return db
+
+    def savedb(self):
+        fw = open('database_{}.json'.format(THING),'w')
+        fw.write(json.dumps(self.db,indent=0,cls=SetEncoder))
+        fw.close()    
+
+    def generate_sets(self):
+        #generate separate sets for questions, possible answers, and dictionary for points.
+        questions = set(self.db.keys())
+        answers = set()
+        for answ in list(self.db.values()):
+            for t in list(answ.values()):
+                for thing in t:
+                    answers.add(thing)
+        points = dict()
+        for r in answers:
+            points[r]=1
+        return questions,answers,points
+
+    def maxpoints(self):
+        #get the current THING with most points
+        if len(self.points)<1: return (0,0)
+        return max(list(zip(list(self.points.values()),list(self.points.keys()))))
+
+    def nextquestion(self):
+        if RANDOM:
+            c_question = random.choice(list(self.questions))
+        elif NEW_AI:
+            c_question = self.largest2(self.questions)
+        else:
+            c_question = self.largest(self.questions)
+        return c_question
+
+    def guess(self):
+        if POINTS:
+            actual = self.maxpoints()[1]
+        else:
+            actual= random.choice(list(self.answers))
+        print(_('¿Tu %s es %s? (s/n) ') % (THING,actual)) 
+        ca= self.ask()
+        if ca == YES:
+            print(_('Gané, jejeje'))
+            self.learn_new(actual)
+            self.win = True
+        if ca == NO:
+            print(_('No puede ser, nooooo!'))
+            self.tries -=1
+            self.points.pop(actual,None)
+            if actual in self.answers: self.answers.remove(actual)
+        
+
+    def play(self):
+        while True:
+            #As long as there are possible answers and questions, and, if we are playing with points, no THING has more
+            #than MAXPOINTS, choose a question from the set using one of three methods: RANDOM, NEW_AI or default.
+            while len(self.answers)>0 and len(self.questions)>0 and (not POINTS or self.maxpoints()[0]<MAXPOINTS):
+                c_question = self.nextquestion()
+                self.questions.remove(c_question)
+                print(_('¿Tu %s %s? (s/n)  ') % (THING,c_question), end=' ')
+                ca=self.ask()
+                if ca is None:
+                    continue
+                self.current_answers[c_question]=ca
+                for e in self.answers.copy():     
+                    #Removes the THING from possible answers set if wrong answer. If FAST is set to True, remove 
+                    #even if no info is avaliable. Otherwise, remove it only if in 
+                    if e not in self.db[c_question][ca] and (FAST or e in self.db[c_question][self.yes_to_no(ca)]):
+                        self.answers.remove(e)
+                        self.points.pop(e,None)
+                    elif e in self.db[c_question][ca]:
+                        self.points[e] = self.points.get(e,0) + 1
+                  
+            #If there are possible answers, and some THING has the maximum points, tries to guess. Also, if only two or one 
+            #answers remain, guess anyway.
+            while not self.win and (len(self.answers)>0 and (not POINTS or self.maxpoints()[0] == MAXPOINTS)) or len(self.answers) in [1,2]:
+                self.guess()
+        
+            #If there are tries left, and there are possible answers, try again
+            if self.tries >0 and len(self.answers)>0 and len(self.questions)>0: continue
+            
+            #If there are no answers left, surrender. Ask for name of the new_thing, and suitable question.
+            else: 
+                print(_('Me rindo.¿Qué %s era?: ') % (THING))
+                new_thing = input('').lower()
+                print(_("\nPerfecto.\nPodrías formular una pregunta de tipo 'sí o no' para diferenciar tu %s? (la respuesta debe ser sí)") % (THING))
+                print(_("Completa la YESguiente oración: '¿Tu %s ...... ?'") % (THING))
+                while True:
+                    print(_("¿Tu %s...") % (THING), end=' ')
+                    new_question = input('').lower()
+                    if new_question in self.questions or new_question in self.current_answers:
+                        #If question already on db, ask for new question (but save answer anyway)
+                        print(_('Esa pregunta ya me la sé, intenta con otra.'))
+                        self.current_answers[new_question]=YES
+                        continue
+                    elif len(new_question)<1:
+                        break
+                    self.current_answers[new_question]=YES
+                    self.db[new_question]=dict()
+                    self.db[new_question][YES] = set()
+                    self.db[new_question][NO] = set()
+                    break
+                self.learn_new(new_thing)  
+                self.savedb()
+                break  
+        
 if __name__ == '__main__':
-    main()
+    print(_('Vamos a jugar un juego, piensa en un %s, cuando quieras, aprieta enter.\n Cuando no sepa la respuesta, preYESone enter para saltar la pregunta') % (THING))
+    input('')
+    while True:
+        game = GuessGame()
+        game.play()
+        print(_('Querrías jugar de nuevo?   '))
+        ca = game.ask()
+        if ca == YES:
+            continue
+        if ca == NO or ca is None:
+            break
