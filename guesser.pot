@@ -1,0 +1,66 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2015-12-27 00:29-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: pregunta2.py:74
+msgid ""
+"Vamos a jugar un juego, piensa en un %s, cuando quieras, aprieta enter.\n"
+" Cuando no sepa la respuesta, preYESone enter para saltar la pregunta"
+msgstr ""
+
+#: pregunta2.py:98
+msgid "¿Tu %s %s? (s/n)  "
+msgstr ""
+
+#: pregunta2.py:118
+msgid "¿Tu %s es %s? (s/n) "
+msgstr ""
+
+#: pregunta2.py:121
+msgid "Gané, jejeje"
+msgstr ""
+
+#: pregunta2.py:126
+msgid "No puede ser, nooooo!"
+msgstr ""
+
+#: pregunta2.py:138
+msgid "Me rindo.¿Qué %s era?: "
+msgstr ""
+
+#: pregunta2.py:140
+msgid ""
+"\n"
+"Perfecto.\n"
+"Podrías formular una pregunta de tipo 'sí o no' para diferenciar tu %s? (la respuesta debe ser sí)"
+msgstr ""
+
+#: pregunta2.py:141
+msgid "Completa la YESguiente oración: '¿Tu %s ...... ?'"
+msgstr ""
+
+#: pregunta2.py:143
+msgid "¿Tu %s..."
+msgstr ""
+
+#: pregunta2.py:146
+msgid "Esa pregunta ya me la sé, intenta con otra."
+msgstr ""
+
+#: pregunta2.py:157
+msgid "Querrías jugar de nuevo?   "
+msgstr ""
+
