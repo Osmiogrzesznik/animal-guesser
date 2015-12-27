@@ -99,6 +99,23 @@ class GuessGame():
             c_question = self.largest(self.questions)
         return c_question
 
+    def askquestion(self):
+        c_question = self.nextquestion()
+        self.questions.remove(c_question)
+        print(_('¿Tu %s %s? (s/n)  ') % (THING,c_question), end=' ')
+        ca=self.ask()
+        if ca is None:
+            return
+        self.current_answers[c_question]=ca
+        for e in self.answers.copy():     
+            #Removes the THING from possible answers set if wrong answer. If FAST is set to True, remove 
+            #even if no info is avaliable. Otherwise, remove it only if in 
+            if e not in self.db[c_question][ca] and (FAST or e in self.db[c_question][self.yes_to_no(ca)]):
+                self.answers.remove(e)
+                self.points.pop(e,None)
+            elif e in self.db[c_question][ca]:
+                self.points[e] = self.points.get(e,0) + 1       
+
     def guess(self):
         if POINTS:
             actual = self.maxpoints()[1]
@@ -115,34 +132,19 @@ class GuessGame():
             self.tries -=1
             self.points.pop(actual,None)
             if actual in self.answers: self.answers.remove(actual)
-        
 
     def play(self):
         while True:
             #As long as there are possible answers and questions, and, if we are playing with points, no THING has more
-            #than MAXPOINTS, choose a question from the set using one of three methods: RANDOM, NEW_AI or default.
-            while len(self.answers)>0 and len(self.questions)>0 and (not POINTS or self.maxpoints()[0]<MAXPOINTS):
-                c_question = self.nextquestion()
-                self.questions.remove(c_question)
-                print(_('¿Tu %s %s? (s/n)  ') % (THING,c_question), end=' ')
-                ca=self.ask()
-                if ca is None:
-                    continue
-                self.current_answers[c_question]=ca
-                for e in self.answers.copy():     
-                    #Removes the THING from possible answers set if wrong answer. If FAST is set to True, remove 
-                    #even if no info is avaliable. Otherwise, remove it only if in 
-                    if e not in self.db[c_question][ca] and (FAST or e in self.db[c_question][self.yes_to_no(ca)]):
-                        self.answers.remove(e)
-                        self.points.pop(e,None)
-                    elif e in self.db[c_question][ca]:
-                        self.points[e] = self.points.get(e,0) + 1
-                  
+            #than MAXPOINTS, choose a question from the set using one of three methods: RANDOM, NEW_AI or default. Also, if only two or one 
+            #answers remain, guess anyway.
+            while len(self.answers)>2 and len(self.questions)>0 and ((not POINTS or self.maxpoints()[0]<MAXPOINTS)):
+                self.askquestion()
             #If there are possible answers, and some THING has the maximum points, tries to guess. Also, if only two or one 
             #answers remain, guess anyway.
-            while not self.win and self.tries>0 and ((len(self.answers)>0 and (not POINTS or self.maxpoints()[0] == MAXPOINTS)) or len(self.answers) in [1,2]):
+            while not self.win and self.tries >0 and (len(self.answers)>0 and (not POINTS or self.maxpoints()[0] == MAXPOINTS) or len(self.answers) in [1,2] ):
                 self.guess()
-            
+        
             if self.win: break
             #If there are tries left, and there are possible answers, try again
             if self.tries >0 and len(self.answers)>0 and len(self.questions)>0: continue
@@ -152,7 +154,7 @@ class GuessGame():
                 print(_('Me rindo.¿Qué %s era?: ') % (THING))
                 new_thing = input('').lower()
                 print(_("\nPerfecto.\nPodrías formular una pregunta de tipo 'sí o no' para diferenciar tu %s? (la respuesta debe ser sí)") % (THING))
-                print(_("Completa la YESguiente oración: '¿Tu %s ...... ?'") % (THING))
+                print(_("Completa la siguiente oración: '¿Tu %s ...... ?'") % (THING))
                 while True:
                     print(_("¿Tu %s...") % (THING), end=' ')
                     new_question = input('').lower()
@@ -168,12 +170,13 @@ class GuessGame():
                     self.db[new_question][YES] = set()
                     self.db[new_question][NO] = set()
                     break
-                self.learn_new(new_thing)  
-                self.savedb()
-                break  
+            self.learn_new(new_thing)  
+            break
+        self.savedb()
+        
         
 if __name__ == '__main__':
-    print(_('Vamos a jugar un juego, piensa en un %s, cuando quieras, aprieta enter.\n Cuando no sepa la respuesta, preYESone enter para saltar la pregunta') % (THING))
+    print(_('Vamos a jugar un juego, piensa en un %s, cuando quieras, aprieta enter.\n Cuando no sepa la respuesta, presione enter para saltar la pregunta') % (THING))
     input('')
     while True:
         game = GuessGame()
