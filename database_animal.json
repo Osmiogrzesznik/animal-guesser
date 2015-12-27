@@ -1,2 +1,4 @@
-//sample database for initial playing//
-{"is a mammal":{"si":["dog"],"no":["dove"]}}
+{
+    "is a mammal":
+    {"si":["dog"],"no":["dove"]}
+}
