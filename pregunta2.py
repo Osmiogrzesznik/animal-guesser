@@ -140,9 +140,10 @@ class GuessGame():
                   
             #If there are possible answers, and some THING has the maximum points, tries to guess. Also, if only two or one 
             #answers remain, guess anyway.
-            while not self.win and (len(self.answers)>0 and (not POINTS or self.maxpoints()[0] == MAXPOINTS)) or len(self.answers) in [1,2]:
+            while not self.win and self.tries>0 and ((len(self.answers)>0 and (not POINTS or self.maxpoints()[0] == MAXPOINTS)) or len(self.answers) in [1,2]):
                 self.guess()
-        
+            
+            if self.win: break
             #If there are tries left, and there are possible answers, try again
             if self.tries >0 and len(self.answers)>0 and len(self.questions)>0: continue
             
