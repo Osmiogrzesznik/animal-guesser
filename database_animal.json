@@ -1,4 +1,26 @@
 {
-    "is a mammal":
-    {"si":["dog"],"no":["dove"]}
+"is a mammal": {
+"yes": [
+"dog"
+],
+"no": [
+"dinosaur",
+"fly",
+"dove"
+]
+},
+"flies": {
+"yes": [
+"fly"
+],
+"no": []
+},
+"is a lizard": {
+"yes": [
+"dinosaur"
+],
+"no": [
+"fly"
+]
+}
 }
